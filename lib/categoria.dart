@@ -163,7 +163,11 @@ class _CategoriaState extends State<Categoria>{
                                   ]
                               ));
                         });
-                  })))
+                  }))
+          ),
+
+          if (selectedItems.length >= 1)
+            appBar.shareSelection(context),
         ],
       ),
     );

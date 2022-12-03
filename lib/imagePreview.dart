@@ -72,6 +72,14 @@ class _imagePreviewState extends State<imagePreview>{
                 label: ""),
 
             BottomNavigationBarItem(
+              backgroundColor: Colors.black,
+                icon: IconButton(icon: Icon(Icons.add_rounded, color: Colors.orangeAccent, size: 40, ),
+                onPressed: () async {
+                  await listAllCategories();
+                  addImageToCategory();
+                }), label: ""),
+
+            BottomNavigationBarItem(
                 backgroundColor: Colors.black,
                 icon: TextButton.icon(
                   icon : Icon(Icons.delete_rounded, color: Colors.redAccent, size: 40,),
@@ -122,12 +130,18 @@ class _imagePreviewState extends State<imagePreview>{
        file.writeAsStringSync(jsonString);
      }
 
+     SizedBox(height: 120);
+
     showDialog(
         context: context, builder: (context){
           return StatefulBuilder(
               builder: (context, setState){
-                return AlertDialog(
-                  backgroundColor: Colors.black,
+                return Container(
+                    color: Colors.transparent ,
+                    width: 300,
+                    height: 200,
+                    child : AlertDialog(
+                  backgroundColor: Colors.transparent,
                   content: ListView.builder(
                       itemCount: availableCategories.length,
                       itemBuilder: (context, index){
@@ -140,9 +154,12 @@ class _imagePreviewState extends State<imagePreview>{
                           title:
                           Align(
                           alignment : Alignment.center,
-                          child : Text(availableCategories[index], style: TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.bold),))),
+                          child : ColoredBox(
+                        color: Colors.transparent,
+                        child : Text(availableCategories[index], style: TextStyle(color: Colors.white, fontSize: 35, fontWeight: FontWeight.bold),)))),
                         );
                 }
+                )
                 )
                 );
               }
@@ -185,22 +202,7 @@ class _imagePreviewState extends State<imagePreview>{
         ]
           )
     ),
-
-          SizedBox(height: 50),
-
-          TextButton(
-            style: TextButton.styleFrom(
-              shadowColor: Colors.white,
-              side: BorderSide(color: Colors.white),
-              backgroundColor: Colors.black
-            ),
-              onPressed: () async{
-                await listAllCategories();
-                addImageToCategory();
-              },
-              child: Text("Añadir a Categoría", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 25),)),
-          SizedBox(height: 50),
-
+            SizedBox(height: 50,),
             bottomNavigationBar(context)
               ]
           )

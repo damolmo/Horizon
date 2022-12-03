@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:restart_app/restart_app.dart';
+import 'package:share/share.dart';
 
 /**
  * This is an open-source impl on flutter grid items selection by "daviiid99
@@ -13,6 +14,7 @@ class selectedAppBar extends StatelessWidget{
 
   late int itemCount;
   late List<String> itemList;
+  List<String> itemsPath = [];
   late String category;
   late File file;
   late Map<dynamic, dynamic> photos;
@@ -51,6 +53,18 @@ class selectedAppBar extends StatelessWidget{
     file.writeAsStringSync(jsonString);
     Restart.restartApp();
   }
+
+  shareItemSelection(){
+
+    for (String photo in photos[category].keys){
+      if (itemList.contains(photo)){
+        itemsPath.add(photos[category][photo]);
+      }
+    }
+
+    // Allow to share selected items
+    Share.shareFiles(itemsPath, text: "Hey, echale un vistazo a esta(s) foto(s) #Horizon #App");
+  }
   
   AppBar appBar() {
     if (itemCount == 0) {
@@ -64,6 +78,14 @@ class selectedAppBar extends StatelessWidget{
         backgroundColor: Colors.blueAccent,
         title: Row(
           children: [
+            TextButton.icon(
+                onPressed: () {
+                 userAbortSelection();
+                 appBar();
+                },
+                icon: Icon(Icons.close_rounded, color: Colors.white,),
+                label: Text("")),
+            Spacer(),
             Text(("${itemCount} Seleccionado(s)"),
               style: TextStyle(color: Colors.white),),
             Spacer(),
@@ -79,6 +101,29 @@ class selectedAppBar extends StatelessWidget{
         ),
       );
     }
+  }
+
+  Container shareSelection (BuildContext context){
+    return Container(
+        child :  ClipRRect(
+        borderRadius: const BorderRadius.only(
+        topRight: Radius.circular(24),
+    topLeft: Radius.circular(24),
+    ),
+
+    child: BottomNavigationBar(
+        backgroundColor: Colors.green,
+        items: <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            backgroundColor: Colors.green,
+              icon: IconButton(icon :  Icon(Icons.share_rounded, color: Colors.white, size: 40,),
+                onPressed: (){
+                shareItemSelection();
+              }, ), label: "")
+        ],
+      ),
+        )
+    );
   }
 
   @override
