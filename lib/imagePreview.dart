@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:share/share.dart';
 import 'package:restart_app/restart_app.dart';
 import 'videoPreview.dart';
+import 'addPhotoToCategory.dart';
+import 'aboutPhoto.dart';
 
 class imagePreview extends StatefulWidget{
   @override
@@ -36,6 +38,12 @@ class _imagePreviewState extends State<imagePreview>{
     required this.currentCategory,
 
 });
+  
+  void initState(){
+    addPhoto = AddPhotoToCategory(categoria: currentCategory, imageName: imageName, imagePath: image, photos: photos,);
+    about = AboutPhoto(photoName: imageName, photoPath: image);
+    super.initState();
+  }
 
   void deletePhoto() async {
     // Read hashmap file
@@ -59,30 +67,37 @@ class _imagePreviewState extends State<imagePreview>{
 
   Container bottomNavigationBar(BuildContext context)  {
     return Container(
+      child : ClipRRect(
+        borderRadius: const BorderRadius.only(
+        topRight: Radius.circular(24),
+        topLeft: Radius.circular(24),
+        bottomRight: Radius.circular(24),
+        bottomLeft: Radius.circular(24),
+        ),
       child : BottomNavigationBar(
-          backgroundColor: Colors.black,
+          backgroundColor: Colors.blueAccent.withOpacity(0.5),
           items: <BottomNavigationBarItem> [
             BottomNavigationBarItem(
-                backgroundColor: Colors.black,
+                backgroundColor: Colors.transparent,
                 icon: TextButton.icon(
-                  icon : Icon(Icons.share_rounded, color: Colors.greenAccent, size: 40,),
+                  icon : Icon(Icons.share_rounded, color: Colors.white, size: 40,),
                   onPressed: (){
                     Share.shareFiles([image], text: "Hey, echale un vistazo a esta foto");
                   }, label: Text(""),),
                 label: ""),
 
             BottomNavigationBarItem(
-              backgroundColor: Colors.black,
-                icon: IconButton(icon: Icon(Icons.add_rounded, color: Colors.orangeAccent, size: 40, ),
+              backgroundColor: Colors.transparent,
+                icon: IconButton(icon: Icon(Icons.add_rounded, color: Colors.white, size: 40, ),
                 onPressed: () async {
-                  await listAllCategories();
-                  addImageToCategory();
+                  await addPhoto.listAllCategories();
+                  addPhoto.addImageToCategory(context);
                 }), label: ""),
 
             BottomNavigationBarItem(
-                backgroundColor: Colors.black,
+                backgroundColor: Colors.transparent,
                 icon: TextButton.icon(
-                  icon : Icon(Icons.delete_rounded, color: Colors.redAccent, size: 40,),
+                  icon : Icon(Icons.delete_rounded, color: Colors.white, size: 40,),
                   onPressed: (){
                     // User proceed with photo delete
                     deletePhoto();
@@ -91,10 +106,12 @@ class _imagePreviewState extends State<imagePreview>{
                   }, label:  Text(""),),label: "")
 
 
-          ]),
+          ])),
     );
   }
 
+  late AboutPhoto about;
+  late AddPhotoToCategory addPhoto;
   final List<String> currentVideos;
   final List<String> currentVideosName;
   late List<String> availableCategories;
@@ -105,87 +122,41 @@ class _imagePreviewState extends State<imagePreview>{
   Map <dynamic, dynamic> photos = {};
   late String jsonString;
 
-   listAllCategories() async {
-    // Fetch existing categories
-
-     availableCategories = [];
-
-    // Read file
-    jsonString = file.readAsStringSync();
-    photos = jsonDecode(jsonString);
-
-    for (String category in photos.keys){
-      setState(() {
-        availableCategories.add(category);
-      });
-    }
-  }
-
-   addImageToCategory() async {
-    // We'll display a dialog to choose a category or multiple categories to save the current photo
-
-     addToCategory(String categoria) async {
-       photos[categoria][imageName] = image;
-       jsonString = jsonEncode(photos);
-       file.writeAsStringSync(jsonString);
-     }
-
-     SizedBox(height: 120);
-
-    showDialog(
-        context: context, builder: (context){
-          return StatefulBuilder(
-              builder: (context, setState){
-                return Container(
-                    color: Colors.transparent ,
-                    width: 300,
-                    height: 200,
-                    child : AlertDialog(
-                  backgroundColor: Colors.transparent,
-                  content: ListView.builder(
-                      itemCount: availableCategories.length,
-                      itemBuilder: (context, index){
-                        return InkWell(
-                          onTap: (){
-                            addToCategory(availableCategories[index]);
-                            Restart.restartApp();
-                          },
-                            child : ListTile(
-                          title:
-                          Align(
-                          alignment : Alignment.center,
-                          child : ColoredBox(
-                        color: Colors.transparent,
-                        child : Text(availableCategories[index], style: TextStyle(color: Colors.white, fontSize: 35, fontWeight: FontWeight.bold),)))),
-                        );
-                }
-                )
-                )
-                );
-              }
-          );
-      }
-    );
-  }
-
   @override
   Widget build(BuildContext context){
     return Scaffold(
       appBar: AppBar(
+        title: Row(
+          children: [
+            ElevatedButton(
+            style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blueAccent.withOpacity(0.2)
+        ),
+        onPressed: (){},
+            child : FittedBox(
+          child : Row(
+            children : [
+          Text(imageName, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 25),),
+          TextButton.icon(onPressed: (){
+              // Generate current photo stats
+              Navigator.push(context, MaterialPageRoute(builder: (context) => about));
+            }, icon: Icon(Icons.info_outline_rounded, color: Colors.white, size: 30,), label: Text("")),
+        ]
+      )
+            )
+            )
+          ],
+        ),
         automaticallyImplyLeading: false,
         backgroundColor: Colors.black,
       ),
       backgroundColor: Colors.black,
       body: Column(
         children: [
+          SizedBox(height: 50,),
           Expanded(
           child : Column(
           children : [
-            Align(
-              alignment : Alignment.center,
-          child : Text(imageName, style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold),)),
-          SizedBox(height: 50,),
-
           InkWell(
             onTap: (){
               if(imageName.contains("VIDEO")){

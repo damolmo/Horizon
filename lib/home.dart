@@ -158,8 +158,16 @@ class _homeMenuState extends State<homeMenu>{
                 SizedBox(height: 20,),
                 Row(
                   children: [
-                    Expanded(
-                child: ColoredBox(
+
+                Expanded(
+                    child : ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                          bottomLeft: Radius.circular(24),
+                          bottomRight: Radius.circular(24),
+                        ),
+                            child :  ColoredBox(
                         color: recentsButton,
                     child : TextButton(
                         style: TextButton.styleFrom(
@@ -177,9 +185,18 @@ class _homeMenuState extends State<homeMenu>{
                         child: Text("Reciente", style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 20),)))),
+                            fontSize: 20),))))),
 
-                      Expanded(
+                    SizedBox(width: 10,),
+
+                    Expanded(
+                      child :ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
+                      ),
                       child: ColoredBox(
                       color: categoriesButton,
                     child : TextButton(
@@ -197,9 +214,11 @@ class _homeMenuState extends State<homeMenu>{
                         child: Text("Categorías", style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 20),)))),
+                            fontSize: 20),))))),
                   ],
                 ),
+
+              SizedBox(height: 20,),
 
               if (esReciente)
                 Expanded(
@@ -308,7 +327,9 @@ Container CategoryButton (BuildContext context){
     child :  ClipRRect(
       borderRadius: const BorderRadius.only(
       topRight: Radius.circular(24),
-  topLeft: Radius.circular(24),
+      topLeft: Radius.circular(24),
+      bottomRight: Radius.circular(24),
+      bottomLeft: Radius.circular(24),
   ),
 
   child: BottomNavigationBar(
@@ -365,21 +386,21 @@ createCategoryDialog(BuildContext context) async {
           return AlertDialog(
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(15.0))),
-            backgroundColor: Colors.blueAccent,
+            backgroundColor: Colors.transparent,
             content: SizedBox(
-               height: 200,
                 child:  Column(
                 children: [
+                  SizedBox(height: 100,),
                   Align(
                     alignment: Alignment.center,
-                  child : Text("Crear Categoría", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),)),
+                  child : Text("Crear Categoría", style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.bold),)),
                   SizedBox(height: 50,),
                   Container(
                     color: Colors.white,
                   child : TextFormField(
                     textAlign: TextAlign.center,
                     decoration: InputDecoration(
-                      hintText: "Escribe un nombre", hintStyle: TextStyle(color: Colors.black), alignLabelWithHint: true,
+                      hintText: "Escribe un nombre", hintStyle: TextStyle(color: Colors.black, fontSize: 25), alignLabelWithHint: true,
                     ),
                     controller: categoria,
                   )),
@@ -390,7 +411,7 @@ createCategoryDialog(BuildContext context) async {
                     ),
                       onPressed: (){
                       addCategoryToMap(categoria.text);
-                      }, child: Text("Añadir", style: TextStyle(color: Colors.white),))
+                      }, child: Text("Añadir", style: TextStyle(color: Colors.white, fontSize: 20),))
                 ],
 
               )
@@ -413,6 +434,8 @@ Container CameraButton(BuildContext context) {
         borderRadius: const BorderRadius.only(
           topRight: Radius.circular(24),
           topLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+          bottomLeft: Radius.circular(24),
         ),
 
         child:  BottomNavigationBar(

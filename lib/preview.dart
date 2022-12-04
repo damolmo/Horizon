@@ -83,9 +83,6 @@ class _PreviewState extends State<Preview> {
 
     getCurrentDateTime();
     updateHashMap();
-    setState(() async {
-      video = await _currentSensor.takePicture();
-    });
 
     // MAIN CAMERA CONTROLLER (0)
     _controladorMain = CameraController(

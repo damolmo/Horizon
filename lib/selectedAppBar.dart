@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:restart_app/restart_app.dart';
 import 'package:share/share.dart';
+import 'addPhotoToCategory.dart';
+import 'addListToCategory.dart';
 
 /**
  * This is an open-source impl on flutter grid items selection by "daviiid99
@@ -12,6 +14,7 @@ import 'package:share/share.dart';
 
 class selectedAppBar extends StatelessWidget{
 
+  late AddListToCategory addToList;
   late int itemCount;
   late List<String> itemList;
   List<String> itemsPath = [];
@@ -40,6 +43,21 @@ class selectedAppBar extends StatelessWidget{
   userAbortSelection(){
     // User cancelled selection
     this.itemCount = 0;
+  }
+
+  listImagesPath(){
+    for (String photo in photos[category].keys){
+      if (itemList.contains(photo)){
+        itemsPath.add(photos[category][photo]);
+      }
+    }
+  }
+
+  addPhotosToCategory(){
+    // User can choose photos inside a category and move all of them into another category
+    listImagesPath();
+     addToList = AddListToCategory(categoria: category, imagesNameList: itemList, imagesNamePath: itemsPath, photos: photos);
+
   }
 
   removeCurrentSelection(){
@@ -75,7 +93,7 @@ class selectedAppBar extends StatelessWidget{
     } else {
       return AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Colors.blueAccent.withOpacity(0.5),
         title: Row(
           children: [
             TextButton.icon(
@@ -108,18 +126,31 @@ class selectedAppBar extends StatelessWidget{
         child :  ClipRRect(
         borderRadius: const BorderRadius.only(
         topRight: Radius.circular(24),
-    topLeft: Radius.circular(24),
+        topLeft: Radius.circular(24),
+        bottomLeft: Radius.circular(24),
+        bottomRight: Radius.circular(24),
     ),
 
     child: BottomNavigationBar(
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.blueAccent.withOpacity(0.5),
         items: <BottomNavigationBarItem>[
+
+          BottomNavigationBarItem(
+            backgroundColor: Colors.orangeAccent,
+            icon: IconButton(icon: Icon(Icons.add_rounded, color: Colors.white, size: 40,),
+            onPressed: (){
+              addPhotosToCategory();
+              addToList.listAllCategories();
+              addToList.addListToCategory(context);
+            },), label: ""
+          ),
+
           BottomNavigationBarItem(
             backgroundColor: Colors.green,
               icon: IconButton(icon :  Icon(Icons.share_rounded, color: Colors.white, size: 40,),
                 onPressed: (){
                 shareItemSelection();
-              }, ), label: "")
+              }, ), label: ""),
         ],
       ),
         )
