@@ -1,11 +1,11 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
 import 'categoria.dart';
 import 'imagePreview.dart';
 import 'package:restart_app/restart_app.dart';
+import 'sortList.dart';
 
 class homeMenu extends StatefulWidget{
   @override
@@ -55,6 +55,7 @@ class _homeMenuState extends State<homeMenu>{
   Color recentsButton = Colors.lightBlueAccent;
   Color categoriesButton = Colors.blueAccent;
   TextEditingController categoria = TextEditingController();
+  sortList orderList = sortList(lista: []);
 
   @override
   void initState(){
@@ -137,6 +138,16 @@ class _homeMenuState extends State<homeMenu>{
         currentRecentsPhotosName.add(photo);
       });
     }
+
+    // Sort recents photos list in descending order
+    orderList = sortList(lista: currentRecentsPhotos);
+    orderList.sortListDescending();
+    currentRecentsPhotos = orderList.getList();
+
+    // Sort recents photos name in descending order
+    orderList = sortList(lista: currentRecentsPhotosName);
+    orderList.sortListDescending();
+    currentRecentsPhotosName = orderList.getList();
   }
 
   @override

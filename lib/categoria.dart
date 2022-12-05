@@ -5,6 +5,7 @@ import 'dart:io';
 import 'imagePreview.dart';
 import 'selectGridItems.dart';
 import 'selectedAppBar.dart';
+import 'sortList.dart';
 
 class Categoria extends StatefulWidget{
   @override
@@ -39,9 +40,9 @@ class _CategoriaState extends State<Categoria>{
 
   final currentCategory;
   late List<String> currentPhotos;
-  final List<String> currentPhotosName;
-  final List<String> currentVideos;
-  final List<String> currentVideosName;
+  late List<String> currentPhotosName;
+  late List<String> currentVideos;
+  late List<String> currentVideosName;
   List<String> selectedItems = [];
   List<int> indexOfSelectedCard = [];
   int itemCount = 0;
@@ -50,11 +51,12 @@ class _CategoriaState extends State<Categoria>{
   final file = File("/data/user/0/com.daviiid99.horizon/app_flutter/photos.json");
   Map<dynamic, dynamic> photos = {};
   late AppBar bar;
-
+  sortList orderList = sortList(lista: []);
 
   @override
   void initState(){
     setState((){
+      sortLists();
       readUpdateJsonMap();
       bar = appBar.appBar();
     });
@@ -65,6 +67,32 @@ class _CategoriaState extends State<Categoria>{
   @override
   void dispose(){
     super.dispose();
+  }
+
+  void sortLists(){
+    // Sort lists on desceding order to show more recent photos on top
+
+    setState((){
+      // Photos
+      orderList = sortList(lista: currentPhotos);
+      orderList.sortListDescending();
+      currentPhotos = orderList.getList();
+
+      // Photos name
+      orderList = sortList(lista: currentPhotosName);
+      orderList.sortListDescending();
+      currentPhotosName = orderList.getList();
+
+      // Videos
+      orderList = sortList(lista: currentVideos);
+      orderList.sortListDescending();
+      currentVideos = orderList.getList();
+
+      // Video name
+      orderList = sortList(lista: currentVideosName);
+      orderList.sortListDescending();
+      currentVideosName = orderList.getList();
+    });
   }
 
   void readUpdateJsonMap () {
