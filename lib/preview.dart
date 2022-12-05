@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'dart:async';
@@ -7,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:share/share.dart';
 import 'home.dart';
 import 'imagePreview.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:share/share.dart';
 
 class Preview extends StatefulWidget{
   @override
@@ -39,6 +42,9 @@ class _PreviewState extends State<Preview> {
   bool esCategorias = false;
   String latestPhoto = "";
   String latestPhotoName = "";
+  QRViewController? controller;
+  Barcode? qrOutput;
+
 
 
   // Types of controllers
@@ -70,6 +76,7 @@ class _PreviewState extends State<Preview> {
   String date = "";
   Color cameraButtonColor = Colors.blueAccent;
   bool isCamera = true;
+  bool isQRScanner = false;
   bool isRecording = false;
   late XFile video;
   // Available resolutions
@@ -119,6 +126,7 @@ class _PreviewState extends State<Preview> {
     //_controladorSelfie.dispose();
 
     _currentSensor.dispose();
+    controller?.dispose();
 
     super.dispose();
   }
@@ -154,6 +162,9 @@ class _PreviewState extends State<Preview> {
           currentVideosName.add(video);
         });
     }
+
+    print("videosss ${currentVideos}"  );
+
   }
 
   updateHashMapFile() async {
@@ -212,15 +223,16 @@ class _PreviewState extends State<Preview> {
 
     if (!fileVideo.existsSync()){
       // File doesn't exists, create it
+      print("no existe el json de video");
       jsonString = jsonEncode(videos); // empty hashmap
       fileVideo.writeAsStringSync(jsonString);
 
     } else {
       // Decode current JSON into hashmap
+      print("existe el json de videos");
       jsonString = fileVideo.readAsStringSync();
       setState((){
         videos = jsonDecode(jsonString);
-
       });
       print(videos);
     }
@@ -421,6 +433,11 @@ class _PreviewState extends State<Preview> {
             updateHashMapFile();
             latestPhoto = imagePath;
             latestPhotoName = "IMG_$date";
+          } else if (isQRScanner) {
+            // User switched to QR Scanner mode
+            _currentSensor.pausePreview(); // we can't use both at the same time
+            onQRViewCreated: _onQRViewCreated;
+
           } else {
             if(!isRecording){
               // Default mode is video recording
@@ -452,7 +469,6 @@ class _PreviewState extends State<Preview> {
               video = await _currentSensor.stopVideoRecording();
               isRecording = false;
               String videoURI = await video.path;
-              getCurrentDateTime();
               final saveFile = await File(videoURI).rename("/data/user/0/com.daviiid99.horizon/app_flutter/VIDEO_$date.mp4");
               final videoPath = await saveFile.path;
               updateCurrentVideos(videoPath, "VIDEO_$date");
@@ -474,6 +490,11 @@ class _PreviewState extends State<Preview> {
            updateHashMapFile();
            latestPhoto = imagePath;
            latestPhotoName = "IMG_$date";
+         } else if (isQRScanner) {
+           // User switched to QR Scanner mode
+           _currentSensor.pausePreview(); // we can't use both at the same time
+           onQRViewCreated: _onQRViewCreated;
+
          } else {
            if(!isRecording){
              // Default mode is video recording
@@ -504,12 +525,15 @@ class _PreviewState extends State<Preview> {
              video = await _currentSensor.stopVideoRecording();
              isRecording = false;
              String videoURI = await video.path;
-             getCurrentDateTime();
              final saveFile = await File(videoURI).rename("/data/user/0/com.daviiid99.horizon/app_flutter/VIDEO_$date.mp4");
+
              final videoPath = await saveFile.path;
              updateCurrentVideos(videoPath, "VIDEO_$date");
              updateHashMapFile();
              print("Guardando video..");
+             Share.shareFiles([saveFile.path], text: "Hey, echale un vistazo a esta foto");
+             updateVideoHashMapFile();
+
            }
          }
 
@@ -520,6 +544,20 @@ class _PreviewState extends State<Preview> {
       print(e);
     }
   }
+
+
+  void _onQRViewCreated(QRViewController controller ){
+    // This method will handle QR code scan
+    this.controller = controller;
+    this.controller?.resumeCamera();
+    controller.scannedDataStream.listen((scanData){
+      setState(() {
+        qrOutput = scanData;
+        print(qrOutput);
+      });
+    });
+
+    }
 
 
   Container CameraCaptureButton(BuildContext context) {
@@ -667,43 +705,6 @@ class _PreviewState extends State<Preview> {
                 ),
 
       SizedBox(height: 20,),
-
-        Row(
-          children: [
-            Spacer(),
-            TextButton(
-                style: TextButton.styleFrom(
-                    backgroundColor: Colors.black
-                ),
-                onPressed: (){
-                  // Switch from video to camera mode
-                  if (!isCamera){
-                    setState((){
-                      cameraButtonColor = Colors.blueAccent;
-                      isCamera = true;
-                    });
-                  }
-                },
-                child: Text("Cámara", style: TextStyle(color: Colors.white),)),
-
-            Spacer(),
-            TextButton(
-                style: TextButton.styleFrom(
-                    backgroundColor: Colors.black
-                ),
-                onPressed: (){
-                  if (isCamera){
-                    setState((){
-                      cameraButtonColor = Colors.redAccent;
-                      isCamera = false;
-                    });
-                  }
-                },
-                child: Text("Vídeo", style: TextStyle(color: Colors.white),)),
-
-            Spacer(),
-          ],
-        ),
                 SizedBox(height: 20,),
 
               ]
@@ -712,6 +713,86 @@ class _PreviewState extends State<Preview> {
     )
           )
       )
+    );
+  }
+
+
+  SingleChildScrollView cameraNavBar() {
+    // We need a scrollable bar with all camera buttons for all screen sizes
+
+    return SingleChildScrollView(
+      child: Column(
+        children : [
+          CameraCaptureButton(context),
+          cameraOptions(),
+      ]
+      ),
+    );
+  }
+
+  Container cameraOptions(){
+    // This is a container handling all camera options
+    // Camera, video, qrcode,...
+
+    return Container(
+        child : SingleChildScrollView(
+          child: Column(
+        children: [
+          //CameraCaptureButton(context),
+      Row(
+        children: [
+          Spacer(),
+          TextButton(
+              style: TextButton.styleFrom(
+                  backgroundColor: Colors.black
+              ),
+              onPressed: (){
+                // Switch from video to camera mode
+                if (!isCamera){
+                  setState((){
+                    cameraButtonColor = Colors.blueAccent;
+                    isCamera = true;
+                  });
+                }
+              },
+              child: Text("Cámara", style: TextStyle(color: Colors.white, fontSize: 20),)),
+
+          /**Spacer(),
+
+          TextButton(
+            onPressed: (){
+              setState(() {
+                isQRScanner = true;
+                isCamera = false;
+                cameraButtonColor = Colors.black;
+              });
+
+
+            },
+            child: Text("QR", style: TextStyle(color: Colors.white, fontSize: 20),),
+          ),*/
+
+          Spacer(),
+          TextButton(
+              style: TextButton.styleFrom(
+                  backgroundColor: Colors.black
+              ),
+              onPressed: (){
+                if (isCamera){
+                  setState((){
+                    cameraButtonColor = Colors.redAccent;
+                    isCamera = false;
+                  });
+                }
+              },
+              child: Text("Vídeo", style: TextStyle(color: Colors.white, fontSize: 20),)),
+
+          Spacer(),
+        ],
+      ),
+      ]
+    )
+        )
     );
   }
 
@@ -821,9 +902,17 @@ class _PreviewState extends State<Preview> {
                 child: Stack(
                     children: [
                       Center(
-                          child: Container(
-                              child : CameraPreview(_currentSensor)
-                      )),
+                              child : ClipRRect(
+                                // Rounded border for camera preview
+                                borderRadius: BorderRadius.only(
+                                  topRight: Radius.circular(24),
+                                  topLeft: Radius.circular(24),
+                                  bottomRight: Radius.circular(24),
+                                  bottomLeft: Radius.circular(24),
+                                ),
+                                  child : CameraPreview(_currentSensor)),
+                      ),
+                          // Buttons inside preview
                       if(showFocusCircle) Positioned(
                           top: y - 20,
                           left: x - 20,
@@ -835,8 +924,9 @@ class _PreviewState extends State<Preview> {
                                 border: Border.all(
                                     color: Colors.white, width: 1.5)
                             ),
-                          ))
-                    ]
+                          )),
+
+                    ],
                   )
             );
           } else {
@@ -844,12 +934,18 @@ class _PreviewState extends State<Preview> {
           }
         }
         ),
-        SizedBox(height: 10,),
-        CameraCaptureButton(context)
-        ]
 
-    ),
-    );}
+          Column(
+              children: [
+              Expanded(
+              child: cameraNavBar(),
+              )
+        ]
+          )
+    ]
+  )
+    );
+}
 
   @override
   Widget build(BuildContext context) {

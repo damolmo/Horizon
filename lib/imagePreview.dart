@@ -41,7 +41,8 @@ class _imagePreviewState extends State<imagePreview>{
   
   void initState(){
     addPhoto = AddPhotoToCategory(categoria: currentCategory, imageName: imageName, imagePath: image, photos: photos,);
-    about = AboutPhoto(photoName: imageName, photoPath: image);
+    about = AboutPhoto(photoName: imageName, photoPath: image, fileType: "photo",);
+    print("videos ${currentVideos}");
     super.initState();
   }
 
@@ -63,6 +64,22 @@ class _imagePreviewState extends State<imagePreview>{
     // Save file
     file.writeAsStringSync(jsonString);
 
+  }
+
+  void navigateToAboutPage(){
+    if (imageName.contains("VIDEO")){
+      for (String video in currentVideos){
+        if (video.contains(imageName)){
+          videoPath = video;
+        }
+      }
+      about = AboutPhoto(photoName: imageName + ".mp4", photoPath: image, fileType: "video",);
+      Navigator.push(context, MaterialPageRoute(builder: (context) => about));
+
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => about));
+
+    }
   }
 
   Container bottomNavigationBar(BuildContext context)  {
@@ -110,6 +127,21 @@ class _imagePreviewState extends State<imagePreview>{
     );
   }
 
+  void videoNavBarVisibility(){
+    // This manages the visibility of navbar on play
+    // It's a common feature on video players
+    setState(() {
+      if (visibility){
+        // Hide navbar
+        visibility = false;
+      } else {
+        // Show navbar
+        visibility = true;
+      }
+    });
+  }
+
+  bool visibility = true;
   late AboutPhoto about;
   late AddPhotoToCategory addPhoto;
   final List<String> currentVideos;
@@ -121,6 +153,7 @@ class _imagePreviewState extends State<imagePreview>{
   final file = File("/data/user/0/com.daviiid99.horizon/app_flutter/photos.json");
   Map <dynamic, dynamic> photos = {};
   late String jsonString;
+  String videoPath  = "";
 
   @override
   Widget build(BuildContext context){
@@ -128,19 +161,22 @@ class _imagePreviewState extends State<imagePreview>{
       appBar: AppBar(
         title: Row(
           children: [
+            if (visibility)
             ElevatedButton(
             style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent.withOpacity(0.2)
         ),
-        onPressed: (){},
+        onPressed: (){
+          navigateToAboutPage();
+        },
             child : FittedBox(
           child : Row(
             children : [
-          Text(imageName, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 25),),
+          Text(imageName, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),),
           TextButton.icon(onPressed: (){
               // Generate current photo stats
-              Navigator.push(context, MaterialPageRoute(builder: (context) => about));
-            }, icon: Icon(Icons.info_outline_rounded, color: Colors.white, size: 30,), label: Text("")),
+            navigateToAboutPage();
+            }, icon: Icon(Icons.info_outline_rounded, color: Colors.white, size: 20,), label: Text("")),
         ]
       )
             )
@@ -157,26 +193,49 @@ class _imagePreviewState extends State<imagePreview>{
           Expanded(
           child : Column(
           children : [
-          InkWell(
-            onTap: (){
-              if(imageName.contains("VIDEO")){
-                // It's a video file
-                int index = currentVideosName.indexOf(imageName + ".mp4");
-                final videoPath = currentVideos[index];
-                print(videoPath);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => videoPreview(videoPath : videoPath)));
-              }
-            },
-          child : Image.file(File(image))
 
-          )
+            InkWell(
+          onTap: (){
+            videoNavBarVisibility();
+    },
+            child : imageName.contains("VIDEO") ? tapToVideo() : Image.file(File(image))
+            )
         ]
           )
     ),
             SizedBox(height: 50,),
+            if(visibility)
             bottomNavigationBar(context)
               ]
           )
     );
   }
+
+  Container tapToVideo(){
+    return Container(
+    child: Stack(
+        children : [
+          Center(
+                    child : Image.file(File(image))),
+                Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                 Center(
+                     heightFactor: 2.5,
+                 child : TextButton.icon(
+                   onPressed: (){
+                   for (String video in currentVideos){
+                     if (video.contains(imageName)){
+                       videoPath = video;
+                     }
+                   }
+                   Navigator.push(context, MaterialPageRoute(builder: (context) => videoPreview(videoPath : videoPath, videoName : imageName+".mp4")));
+                   },  icon: Icon(Icons.play_arrow_rounded, size: 100, color: Colors.white,), label: Text(""),)),
+          ]
+          )
+    ]
+    )
+    );
+  }
+
 }

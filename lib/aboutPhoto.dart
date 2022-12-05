@@ -7,12 +7,14 @@ class AboutPhoto extends StatefulWidget {
     super.key,
     required this.photoName,
     required this.photoPath,
+    required this.fileType,
   });
 
   late String photoName;
   late String photoPath;
+  late String fileType;
 
-  _AboutPhotoState createState() => _AboutPhotoState(photoName: photoName, photoPath: photoPath);
+  _AboutPhotoState createState() => _AboutPhotoState(photoName: photoName, photoPath: photoPath, fileType: fileType);
 
 }
 
@@ -20,7 +22,9 @@ class _AboutPhotoState extends State<AboutPhoto>{
 
   double photoSize = 0.0;
   late String photoName;
+  late String fileType;
   late String photoPath;
+  String defaultTitle = "Sobre esta imagen";
   List<String> allEntries = [];
   List<String> allEntriesString = ["Nombre", "Ruta", "Tamaño"];
   List<IconData> allEntriesIcons = [
@@ -32,12 +36,14 @@ class _AboutPhotoState extends State<AboutPhoto>{
   _AboutPhotoState({
     required this.photoName,
     required this.photoPath,
+    required this.fileType,
 
 });
 
   void initState(){
     checkPhotoSize();
     addValuesToList();
+    setFileTitle();
     super.initState();
   }
 
@@ -51,8 +57,7 @@ class _AboutPhotoState extends State<AboutPhoto>{
     final file = File(photoPath);
     var sizeBytes = file.readAsBytesSync().lengthInBytes;
     var sizeKbytes = sizeBytes / 1024;
-    var sizeMb = sizeKbytes / 1024;
-    photoSize =  sizeMb.roundToDouble();
+    photoSize =  sizeKbytes.roundToDouble();
 
   }
 
@@ -61,7 +66,19 @@ class _AboutPhotoState extends State<AboutPhoto>{
 
     allEntries.add(photoName.toString());
     allEntries.add(photoPath.toString());
-    allEntries.add(photoSize.toString()+"MB");
+    allEntries.add(photoSize.toString()+"KB");
+  }
+
+  setFileTitle(){
+    // Check appbar title according to file type
+    setState(() {
+      if (fileType.contains("photo")){
+        defaultTitle = "Sobre esta imagen";
+      } else {
+        defaultTitle = "Sobre este video";
+      }
+    });
+
   }
 
   Scaffold entriesListView(){
@@ -69,7 +86,7 @@ class _AboutPhotoState extends State<AboutPhoto>{
       backgroundColor: Colors.black,
      body: Column(
         children : [
-          Text("Sobre esta imagen", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 40),),
+          Text(defaultTitle, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 40),),
           SizedBox(height: 20,),
           Image.file(File(photoPath), height: 200),
           SizedBox(height: 20,),
@@ -83,7 +100,7 @@ class _AboutPhotoState extends State<AboutPhoto>{
                   child : Card(
                 color: Colors.black,
                     child : ListTile(
-                  leading: Icon(allEntriesIcons[index]),
+                  leading: Icon(allEntriesIcons[index],color: Colors.white, size: 20,),
                   title: Text(allEntriesString[index], style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 30)),
                   subtitle: Text(allEntries[index], style: TextStyle(color: Colors.white, fontSize: 20)),
                 )
