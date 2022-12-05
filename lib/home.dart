@@ -48,6 +48,8 @@ class _homeMenuState extends State<homeMenu>{
   List<String> currentRecentsPhotos = [];
   List<String> currentRecentsPhotosName = [];
   List<String> currentPhotosName = [];
+  List<String> selectedCategories = [];
+  List<int> selectedCategoriesIndex = [];
   final List<String> currentVideos;
   final List<String> currentVideosName;
    List<String> categoriesCover = [];
@@ -56,11 +58,16 @@ class _homeMenuState extends State<homeMenu>{
   Color categoriesButton = Colors.blueAccent;
   TextEditingController categoria = TextEditingController();
   sortList orderList = sortList(lista: []);
+  final file = File("/data/user/0/com.daviiid99.horizon/app_flutter/photos.json");
+  late AppBar appBar;
 
   @override
   void initState(){
     generateRecentsPhotos();
     generateCategoriesCover();
+    setState(() {
+      appBar = currentAppBar(context);
+    });
     super.initState();
   }
 
@@ -150,18 +157,104 @@ class _homeMenuState extends State<homeMenu>{
     currentRecentsPhotosName = orderList.getList();
   }
 
+  void addCategoryToList(String category){
+    // Add category to selected category list
+    setState(() {
+      if (!selectedCategories.contains(category)){
+        selectedCategories.add(category);
+      } else {
+        selectedCategories.remove(category);
+      }
+    });
+  }
+
+  void selectedIndex(int indexCategory){
+    // Add index of selected categories
+    setState(() {
+      if (!selectedCategoriesIndex.contains(indexCategory)){
+        selectedCategoriesIndex.add(indexCategory);
+      } else {
+        selectedCategoriesIndex.remove(indexCategory);
+      }
+    });
+  }
+
+  void removeSelectedCategories(){
+    // User choosed to remove selected categories
+
+    for (String categoria in selectedCategories){
+        photos.remove(categoria);
+      }
+
+
+    String jsonString = jsonEncode(photos);
+    file.writeAsStringSync(jsonString);
+    selectedCategories = [];
+    selectedCategoriesIndex = [];
+
+  }
+
+  setCurrentAppbar(int index){
+    // Check appbar type and set
+    setState(() {
+      addCategoryToList(categories[index]); // Add element
+      selectedIndex(index); // Add index
+      appBar = currentAppBar(context);
+    });
+  }
+
+
+  AppBar currentAppBar(BuildContext context){
+    // Set AppBar depending if there's a selected item or not
+      if (selectedCategoriesIndex.length == 0){
+        // Default navbar
+        return AppBar(
+          automaticallyImplyLeading: false,
+          elevation: 0.0,
+          title: Text(""),
+          backgroundColor: Colors.black,
+        );
+      } else {
+        return AppBar(
+          backgroundColor : Colors.blueAccent.withOpacity(0.5),
+          automaticallyImplyLeading: false,
+          elevation: 0.0,
+          title: Row(
+            children: [
+              TextButton.icon(
+                  onPressed: (){
+                    setState(() {
+                      selectedCategoriesIndex = [];
+                      selectedCategories = [];
+                      appBar = currentAppBar(context);
+                    });
+                  },
+                  icon: Icon(Icons.close_rounded, color: Colors.white,), label: Text("")),
+                  Spacer(),
+                  Text("${selectedCategoriesIndex.length} seleccionado(s)", style: TextStyle(color: Colors.white),),
+                  Spacer(),
+                  TextButton.icon(
+                      onPressed: (){
+                        setState(() {
+                          removeSelectedCategories();
+                          appBar = currentAppBar(context);
+                          Restart.restartApp();
+                        });
+                      },
+                      icon: Icon(Icons.delete_rounded, color: Colors.white,), label: Text(""))
+            ],
+          ),
+        );
+      }
+  }
+
   @override
   Widget build(BuildContext context){
     return StatefulBuilder(builder: (context, setState)
     {
       return Scaffold(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          elevation: 0.0,
-          title: Text(""),
-          backgroundColor: Colors.black,
-        ),
+        appBar: appBar,
 
         body: Column(
             children: [
@@ -290,7 +383,11 @@ class _homeMenuState extends State<homeMenu>{
                                           color : Colors.black,
                                           child : Column(
                                             children: [
-                                              Image.file(File(categoriesCover[index]), scale: 2.0,),
+                                              Image.file(
+                                                File(categoriesCover[index],), scale: 2.0,
+                                                  color : selectedCategoriesIndex.contains(index) ? Colors.blueAccent : null,
+
+                                              ),
                                                Text(categories[index], style: TextStyle(
                                                   color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
                                                )
@@ -299,9 +396,24 @@ class _homeMenuState extends State<homeMenu>{
                                           ),
                                           ),
                                           onTap: (){
-                                            generateCategoryPhotos(categories[index]);
-                                          Navigator.push(context, MaterialPageRoute(builder: (context) => Categoria(currentPhotos : currentPhotos, currentPhotosName : currentPhotosName, currentVideos: currentVideos, currentVideosName: currentVideosName, currentCategory: categories[index],)));
+                                            if (selectedCategoriesIndex.length == 0){
+                                              generateCategoryPhotos(categories[index]);
+                                              Navigator.push(context, MaterialPageRoute(builder: (context) => Categoria(currentPhotos : currentPhotos, currentPhotosName : currentPhotosName, currentVideos: currentVideos, currentVideosName: currentVideosName, currentCategory: categories[index],)));
+                                            } else {
+                                              // We'll add options to remove selected categories
+                                             setState((){
+                                               setCurrentAppbar(index);
+                                             });
+                                            }
+
                                         },
+
+                                          onLongPress: (){
+                                            // We'll add options to remove selected categories
+                                            setState((){
+                                              setCurrentAppbar(index);
+                                            });
+                                          },
                                     ),
                                     ]
                                   ),
