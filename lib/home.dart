@@ -168,6 +168,23 @@ class _homeMenuState extends State<homeMenu>{
     });
   }
 
+  void refreshLists(){
+    // Since user wants to delete photos without reboots
+    // A proper way to refresh UI is needed
+
+    // Clear ALL UI elements
+    // To prevent future errors
+
+    setState(() {
+      currentRecentsPhotosName = [];
+      currentPhotos = [];
+      categoriesCover =  [];
+    });
+
+    generateRecentsPhotos(); // Generate recents photos
+    generateCategoriesCover(); // Generate categories covers
+  }
+
   void selectedIndex(int indexCategory){
     // Add index of selected categories
     setState(() {
@@ -184,13 +201,20 @@ class _homeMenuState extends State<homeMenu>{
 
     for (String categoria in selectedCategories){
         photos.remove(categoria);
+        categories.remove(categoria);
       }
-
 
     String jsonString = jsonEncode(photos);
     file.writeAsStringSync(jsonString);
-    selectedCategories = [];
-    selectedCategoriesIndex = [];
+
+
+    setState(() {
+      // Needed to notify other widgets about changes
+      photos;
+      selectedCategories = [];
+      selectedCategoriesIndex = [];
+      categories;
+    });
 
   }
 
@@ -238,7 +262,7 @@ class _homeMenuState extends State<homeMenu>{
                         setState(() {
                           removeSelectedCategories();
                           appBar = currentAppBar(context);
-                          Restart.restartApp();
+                          refreshLists();
                         });
                       },
                       icon: Icon(Icons.delete_rounded, color: Colors.white,), label: Text(""))
