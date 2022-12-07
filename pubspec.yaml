@@ -82,6 +82,7 @@ flutter:
     - assets/images/selfie_2.jpg
     - assets/images/selfie_3.jpg
     - assets/images/selfie_4.jpg
+    - assets/images/trash.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

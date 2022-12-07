@@ -713,6 +713,22 @@ class _homeMenuState extends State<homeMenu>{
                   )
                 ),
 
+              if (esPapelera && trashPhotosName.length == 0)
+                FittedBox(
+                  child: Column(
+                    children: [
+                      SizedBox(height: 100,),
+                      Align(
+                      alignment : Alignment.center,
+                      child : Image.asset("assets/images/trash.png", width: 200, height: 200,)),
+                      Align(
+                        alignment : Alignment.center,
+                      child : Text("No hay nada, esta vacía", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),)),
+                      SizedBox(height: 200,)
+                    ],
+                  ),
+                ),
+
               if (esReciente)
               CameraButton(context),
 
