@@ -30,22 +30,25 @@ class _PreviewState extends State<Preview> {
 
   final file = File("/data/user/0/com.daviiid99.horizon/app_flutter/photos.json");
   final fileVideo = File("/data/user/0/com.daviiid99.horizon/app_flutter/videos.json");
+  final fileTrash =  File("/data/user/0/com.daviiid99.horizon/app_flutter/trash.json");
   Map<dynamic, dynamic> photos = {};
   Map<dynamic, dynamic> photosCategories = {};
   Map<dynamic, dynamic> videos = {};
+  Map<dynamic, dynamic> trash = {};
   List<String> currentPhotos = [];
   List<String> currentVideos = [];
   List<String> currentVideosName = [];
   List<String> currentPhotosName = [];
   List<String> categories = [];
+  List<String> trashPhotos = [];
+  List<String> trashPhotosName = [];
   bool esReciente = true;
   bool esCategorias = false;
+  bool esPapelera = false;
   String latestPhoto = "";
   String latestPhotoName = "";
   QRViewController? controller;
   Barcode? qrOutput;
-
-
 
   // Types of controllers
   late CameraController _controladorMain;
@@ -114,7 +117,7 @@ class _PreviewState extends State<Preview> {
 
     // Load home screen instead of camera preview
 
-    Navigator.push(context, MaterialPageRoute(builder: (context)=> homeMenu(esReciente : esReciente, esCategorias : esCategorias, categories : categories, currentVideos: currentVideos, currentVideosName : currentVideosName, photos : photos )));
+    Navigator.push(context, MaterialPageRoute(builder: (context)=> homeMenu(esReciente : esReciente, esCategorias : esCategorias, categories : categories, currentVideos: currentVideos, currentVideosName : currentVideosName, photos : photos , trashPhotos: trashPhotos, trashPhotosName: trashPhotosName, esPapelera :  esPapelera)));
   }
 
   @override
@@ -154,7 +157,7 @@ class _PreviewState extends State<Preview> {
       }
     }
 
-    print(currentPhotos);
+    //print(currentPhotos);
 
     for (String video in videos.keys){
         setState(() {
@@ -163,7 +166,16 @@ class _PreviewState extends State<Preview> {
         });
     }
 
-    print("videosss ${currentVideos}"  );
+    //print("videosss ${currentVideos}"  );
+
+    for (String photo in trash.keys){
+      if (!trashPhotosName.contains(photo) && trash.keys.length > 0){
+        setState(() {
+          trashPhotosName.add(photo); // photo name
+          trashPhotos.add(trash[photo]);
+        });
+      }
+    }
 
   }
 
@@ -235,6 +247,17 @@ class _PreviewState extends State<Preview> {
         videos = jsonDecode(jsonString);
       });
       print(videos);
+    }
+
+    if (!fileTrash.existsSync()){
+      // File doesn't exist, create it
+      jsonString = jsonEncode(trash);
+      fileTrash.writeAsStringSync(jsonString);
+    } else {
+      jsonString = fileTrash.readAsStringSync();
+      setState((){
+        trash = jsonDecode(jsonString);
+      });
     }
 
     updateLists();
@@ -864,7 +887,7 @@ class _PreviewState extends State<Preview> {
                     backgroundColor: Colors.black
                   ),
                     onPressed: (){
-                      Navigator.push(context, MaterialPageRoute(builder: (context)=> homeMenu(esReciente : esReciente, esCategorias : esCategorias, categories : categories, currentVideos: currentVideos, currentVideosName : currentVideosName, photos: photos, )));
+                      Navigator.push(context, MaterialPageRoute(builder: (context)=> homeMenu(esReciente : esReciente, esCategorias : esCategorias, categories : categories, currentVideos: currentVideos, currentVideosName : currentVideosName, photos : photos , trashPhotos: trashPhotos, trashPhotosName: trashPhotosName, esPapelera :  esPapelera)));
                       }
                     ,
                     icon: Icon(Icons.close_rounded, size: 25,),

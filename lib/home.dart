@@ -14,20 +14,26 @@ class homeMenu extends StatefulWidget{
     super.key,
      required this.esReciente,
      required this.esCategorias,
+     required this.esPapelera,
      required this.categories,
     required this.currentVideos,
     required this.currentVideosName,
     required this.photos,
+    required this.trashPhotos,
+    required this.trashPhotosName,
 });
 
    final bool esReciente;
    final bool esCategorias;
+   final bool esPapelera;
    final List<String> categories;
    final List<String> currentVideos;
    final List<String> currentVideosName;
+   late List<String> trashPhotos;
+   late List<String> trashPhotosName;
    Map<dynamic,dynamic> photos;
 
-  _homeMenuState createState() => _homeMenuState(esReciente : esReciente, esCategorias : esCategorias, categories : categories, currentVideos: currentVideos, currentVideosName: currentVideosName, photos: photos);
+  _homeMenuState createState() => _homeMenuState(esReciente : esReciente, esCategorias : esCategorias, categories : categories, currentVideos: currentVideos, currentVideosName: currentVideosName, photos: photos, trashPhotos : trashPhotos, trashPhotosName : trashPhotosName, esPapelera: esPapelera);
 }
 
 class _homeMenuState extends State<homeMenu>{
@@ -35,14 +41,18 @@ class _homeMenuState extends State<homeMenu>{
   _homeMenuState({
     required this.esReciente,
     required this.esCategorias,
+    required this.esPapelera,
     required this.categories,
     required this.currentVideos,
     required this.currentVideosName,
     required this.photos,
+    required this.trashPhotos,
+    required this.trashPhotosName,
 });
 
   late bool esReciente;
   late bool esCategorias;
+  late bool esPapelera;
   late List<String> categories;
   List<String> currentPhotos = [];
   List<String> currentRecentsPhotos = [];
@@ -52,13 +62,22 @@ class _homeMenuState extends State<homeMenu>{
   List<int> selectedCategoriesIndex = [];
   final List<String> currentVideos;
   final List<String> currentVideosName;
-   List<String> categoriesCover = [];
+  late List<String> trashPhotos = [];
+  late List<String> trashPhotosName = [];
+  List<String> selectedTrashPhotos = [];
+  List<String> selectedTrashPhotosName = [];
+  List<int> selectedTrashPhotosIndex = [];
+  List<String> categoriesCover = [];
   Map<dynamic,dynamic> photos;
+  Map<dynamic,dynamic> trash = {};
   Color recentsButton = Colors.lightBlueAccent;
   Color categoriesButton = Colors.blueAccent;
+  Color trashButton = Colors.blueAccent;
   TextEditingController categoria = TextEditingController();
   sortList orderList = sortList(lista: []);
   final file = File("/data/user/0/com.daviiid99.horizon/app_flutter/photos.json");
+  final fileTrash = File("/data/user/0/com.daviiid99.horizon/app_flutter/trash.json");
+
   late AppBar appBar;
 
   @override
@@ -272,6 +291,166 @@ class _homeMenuState extends State<homeMenu>{
       }
   }
 
+  void swapColors(){
+    // Check current color and swap it
+
+    setState(() {
+
+    if (esReciente){
+      // Current choosed button is Recents
+      recentsButton = Colors.lightBlueAccent;
+      categoriesButton = Colors.blueAccent;
+      trashButton = Colors.blueAccent;
+    } else if (esCategorias){
+      // Current choosed buttons is Categories
+      recentsButton = Colors.blueAccent;
+      categoriesButton = Colors.lightBlueAccent;
+      trashButton = Colors.blueAccent;
+    } else {
+      // Current choosed button is Trash
+      recentsButton = Colors.blueAccent;
+      categoriesButton = Colors.blueAccent;
+      trashButton = Colors.lightBlueAccent;
+    }
+
+    });
+
+  }
+
+  void addToRestoreListIndex(int index){
+    if (!selectedTrashPhotosIndex.contains(index)){
+      selectedTrashPhotosIndex.add(index);
+    } else {
+      selectedTrashPhotosIndex.remove(index);
+    }
+  }
+
+  void addToRestoreList(String photo){
+    // Add choosed photo to restore list
+
+    setState(() {
+    if (!selectedTrashPhotos.contains(photo)){
+        selectedTrashPhotos.add(photo); // Photo path
+    } else {
+      selectedTrashPhotos.remove(photo);
+    }
+    });
+
+  }
+
+  void removePhotos(){
+      // User remove photos from trash folder
+
+      // Get current trash map state
+      String jsonString = "";
+      jsonString = fileTrash.readAsStringSync();
+      trash = jsonDecode(jsonString);
+
+      // Remove choosed photos
+    for (String photo in selectedTrashPhotos){
+      int index = trashPhotos.indexOf(photo);
+      String name = trashPhotosName[index];
+      trash.remove(name);
+      trashPhotosName.remove(name);
+      trashPhotos.remove(photo);
+    }
+
+    // Overwrite file
+    jsonString = jsonEncode(trash);
+    fileTrash.writeAsStringSync(jsonString);
+
+    // Clean objects
+    setState(() {
+      selectedTrashPhotos = [];
+      selectedTrashPhotosIndex = [];
+      selectedTrashPhotosName = [];
+      trashPhotos;
+      trashPhotosName;
+    });
+  }
+
+  void restorePhotos(){
+    // This method will restore choosed photos into recents category
+    // We're not restoring them to previous category yet due to some limitations
+
+    // Read JSON map
+    String jsonString = fileTrash.readAsStringSync();
+    trash = jsonDecode(jsonString);
+
+    // Recover photoname using photopath and original hash map
+    for (String photo in selectedTrashPhotos){
+      for (String photoName in trash.keys){
+        if (trash[photoName].contains(photo) && !selectedTrashPhotosName.contains(photoName)){
+          selectedTrashPhotosName.add(photoName);
+          trashPhotos.remove(photo);
+          trashPhotosName.remove(photoName);
+        }
+      }
+    }
+    print(selectedTrashPhotos);
+    print(selectedTrashPhotosName);
+
+    // Add photoname along photopath into hash map
+    for (String photoName in selectedTrashPhotosName){
+      for (String photo in selectedTrashPhotos){
+        if (selectedTrashPhotos.indexOf(photo) == selectedTrashPhotosName.indexOf(photoName) && !photos.containsKey(photoName))
+        photos["Reciente"][photoName] = "";
+        photos["Reciente"][photoName] = photo;
+        trash.remove(photoName);
+      }
+    }
+
+    // Save changes permanently
+    jsonString = "";
+    jsonString= jsonEncode(photos);
+    file.writeAsStringSync(jsonString);
+    jsonString = "";
+    jsonString = jsonEncode(trash);
+    fileTrash.writeAsStringSync(jsonString);
+
+    // Reload changes
+    setState(() {
+      trashPhotos;
+      trashPhotosName;
+      selectedTrashPhotos = [];
+      selectedTrashPhotosName = [];
+    });
+  }
+
+  Container trasButtonContainer(BuildContext context) {
+    return Container(
+        child : ClipRRect(
+            borderRadius: BorderRadius.only(
+              topLeft : Radius.circular(24),
+              topRight: Radius.circular(24),
+              bottomRight: Radius.circular(24),
+              bottomLeft: Radius.circular(24),
+            ),
+            child: BottomNavigationBar(
+              backgroundColor: Colors.blueAccent.withOpacity(0.5),
+              items: <BottomNavigationBarItem> [
+                BottomNavigationBarItem(
+                    backgroundColor: Colors.greenAccent,
+                    icon: IconButton(
+                      icon :  Icon(Icons.restore_rounded, color: Colors.white, size: 40, ),
+                      onPressed: (){
+                        restorePhotos();
+                      },), label: ""
+                ),
+
+                BottomNavigationBarItem(
+                    backgroundColor: Colors.redAccent,
+                    icon: IconButton(icon:  Icon(Icons.delete_rounded, color: Colors.white, size: 40,),
+                      onPressed: (){
+                        removePhotos();
+                      },), label: "")
+              ],
+            )
+        )
+    );
+  }
+
+
   @override
   Widget build(BuildContext context){
     return StatefulBuilder(builder: (context, setState)
@@ -284,7 +463,8 @@ class _homeMenuState extends State<homeMenu>{
             children: [
               Image.asset("assets/icon/banner.png",),
                 SizedBox(height: 20,),
-                Row(
+                SingleChildScrollView(
+               child : Row(
                   children: [
 
                 Expanded(
@@ -304,10 +484,10 @@ class _homeMenuState extends State<homeMenu>{
                         onPressed: () {
                           // User choosed recents photos
                           setState(() {
-                            esCategorias = false;
                             esReciente = true;
-                            recentsButton = Colors.lightBlueAccent;
-                            categoriesButton = Colors.blueAccent;
+                            esCategorias = false;
+                            esPapelera = false;
+                            swapColors();
                           });
                         },
                         child: Text("Reciente", style: TextStyle(
@@ -335,15 +515,44 @@ class _homeMenuState extends State<homeMenu>{
                           setState(() {
                             esReciente = false;
                             esCategorias = true;
-                            recentsButton = Colors.blueAccent;
-                            categoriesButton = Colors.lightBlueAccent;
+                            esPapelera = false;
+                            swapColors();
                           });
                         },
                         child: Text("Categorías", style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 20),))))),
+
+                    SizedBox(width: 10,),
+
+                    Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(24),
+                            topLeft: Radius.circular(24),
+                            bottomRight: Radius.circular(24),
+                            bottomLeft: Radius.circular(24),
+                          ),
+                          child:  ColoredBox(
+                            color: trashButton,
+                            child: TextButton(
+                              child:  Text("Papelera", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),
+                              onPressed: (){
+                                setState((){
+                                  // Swap colors
+                                  esReciente = false;
+                                  esCategorias = false;
+                                  esPapelera = true;
+                                  swapColors();
+                                });
+                              }),
+                          ),
+                        )
+
+                    ),
                   ],
+                ),
                 ),
 
               SizedBox(height: 20,),
@@ -450,12 +659,69 @@ class _homeMenuState extends State<homeMenu>{
                           )
                 ),
 
+              if (esPapelera)
+                Expanded(
+                  child:  GridView.count(
+                      crossAxisCount: 3,
+                      childAspectRatio: 2.3/3,
+                    scrollDirection: Axis.vertical,
+                  children: List.generate(trashPhotos.length, (index){
+                    return StatefulBuilder(
+                        builder: (context, setState){
+                          return FittedBox(
+                            child:  Column(
+                              children: [
+                                InkWell(
+                                  child : ClipRRect(
+                            borderRadius: BorderRadius.only(
+                                topLeft : Radius.circular(24),
+                                topRight: Radius.circular(24),
+                                bottomLeft: Radius.circular(24),
+                                bottomRight: Radius.circular(24),
+                            ),
+                                  child:  Card(
+                                    child: Column(
+                                      children: [
+                                        Image.file(
+                                            File(trashPhotos[index]),
+                                            color: selectedTrashPhotosIndex.contains(index) ? Colors.blueAccent.withOpacity(0.5) : null,),
+                                        Text(trashPhotosName[index], style: TextStyle(color: Colors.white),)
+                                      ],
+                                    ),
+                                  ),
+                                  ),
+                                  onTap: (){
+                                    // TO-DO
+                                    if (selectedTrashPhotosIndex.length > 0 ){
+                                      addToRestoreList(trashPhotos[index]);
+                                      addToRestoreListIndex(index);
+                                    }
+                                  },
+
+                                  onLongPress: (){
+                                    addToRestoreList(trashPhotos[index]);
+                                    addToRestoreListIndex(index);
+                                  },
+                                )
+                              ],
+                            ),
+                          );
+                    }
+                    );
+                  }
+                ),
+                  )
+                ),
 
               if (esReciente)
               CameraButton(context),
 
               if (esCategorias)
-                CategoryButton(context)
+                CategoryButton(context),
+
+              if (esPapelera && selectedTrashPhotos.length > 0)
+                // Only show button if there's a selected photo
+                trasButtonContainer(context),
             ]
 
         ),
@@ -487,7 +753,7 @@ Container CategoryButton (BuildContext context){
             icon: TextButton.icon(
               icon : Icon(
               Icons.add_rounded,
-              color: Colors.white,),
+              color: Colors.white, size: 40,),
                 onPressed: () {
                   createCategoryDialog(context);
                 },
@@ -573,11 +839,13 @@ createCategoryDialog(BuildContext context) async {
 
 Container CameraButton(BuildContext context) {
 
+  int currentIndex = 0;
+
   // This is the home screen button
   // Pressing the button will open the camera preview context
   return Container(
     color: Colors.transparent,
-    child: ClipRRect(
+      child : ClipRRect(
         borderRadius: const BorderRadius.only(
           topRight: Radius.circular(24),
           topLeft: Radius.circular(24),
@@ -585,19 +853,26 @@ Container CameraButton(BuildContext context) {
           bottomLeft: Radius.circular(24),
         ),
 
-        child:  BottomNavigationBar(
+          child: InkWell(
+          child: NavigationBar(
             backgroundColor: Colors.blueAccent,
-            items: <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
-                backgroundColor: Colors.blueAccent,
-                icon: TextButton.icon(icon :  Icon(Icons.photo_camera_rounded, color: Colors.white), label: Text(""),
-                  onPressed: (){
-                    Navigator.pop(context);
-                  },),
-                label: "",
-              )
-            ]
-        )
-    ),
+              destinations: [
+                NavigationDestination(
+                    icon:  TextButton.icon(icon :  Icon(Icons.photo_camera_rounded, color: Colors.white, size: 40,), label: Text(""),
+                      onPressed: (){
+                        Navigator.pop(context);
+                      },),
+                    label: "")
+              ],
+              ),
+              onTap : (){
+                Navigator.pop(context);
+              }
+
+        ),
+
+
+    )
   );
 }
+

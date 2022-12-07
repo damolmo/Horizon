@@ -58,6 +58,14 @@ class _imagePreviewState extends State<imagePreview>{
       photos[currentCategory].remove(imageName);
     }
 
+    // Add photo to trash folder
+    jsonString = fileTrash.readAsStringSync();
+    trash = jsonDecode(jsonString);
+    trash[imageName] = "";
+    trash[imageName] = image;
+    jsonString = jsonEncode(trash);
+    fileTrash.writeAsStringSync(jsonString);
+
     // Save hashmap
     jsonString = jsonEncode(photos);
 
@@ -151,7 +159,9 @@ class _imagePreviewState extends State<imagePreview>{
   final image;
   final imageName;
   final file = File("/data/user/0/com.daviiid99.horizon/app_flutter/photos.json");
+  final fileTrash = File("/data/user/0/com.daviiid99.horizon/app_flutter/trash.json");
   Map <dynamic, dynamic> photos = {};
+  Map <dynamic, dynamic> trash = {};
   late String jsonString;
   String videoPath  = "";
 

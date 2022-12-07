@@ -5,7 +5,7 @@ import 'package:restart_app/restart_app.dart';
 import 'package:share/share.dart';
 import 'addPhotoToCategory.dart';
 import 'addListToCategory.dart';
-
+import 'categoria.dart';
 /**
  * This is an open-source impl on flutter grid items selection by "daviiid99
  * If you want to use it on an open source product don't remove the credits header
@@ -21,6 +21,9 @@ class selectedAppBar extends StatelessWidget{
   late String category;
   late File file;
   late Map<dynamic, dynamic> photos;
+  late Map<dynamic, dynamic> trash;
+  final fileTrash = File("/data/user/0/com.daviiid99.horizon/app_flutter/trash.json");
+  String jsonString = "";
 
   selectedAppBar({
     super.key,
@@ -60,15 +63,46 @@ class selectedAppBar extends StatelessWidget{
 
   }
 
+  Map <dynamic, dynamic> readTrashMap(){
+    // Read map to delete files later
+    jsonString = fileTrash.readAsStringSync();
+    trash = jsonDecode(jsonString);
+
+    return trash;
+
+  }
+
   removeCurrentSelection(){
+
+    // Fetch trash map
+    trash = readTrashMap();
+
+    // Get items path
+    for (String photo in itemList){
+      itemsPath.add(photos[category][photo]);
+    }
+
     // Remove selected items
     for (String photo in itemList){
-        photos[category].remove(photo);
+      int index = itemList.indexOf(photo);
+      print(itemList);
+      print(itemsPath);
+      print(index);
+      trash[photo] = [];
+      trash[photo] = itemsPath[index];
+      photos[category].remove(photo);
       }
 
     String jsonString = "";
+
+    // Update photos map
     jsonString = jsonEncode(photos);
     file.writeAsStringSync(jsonString);
+
+    // Update trash map
+    jsonString = jsonEncode(trash);
+    fileTrash.writeAsStringSync(jsonString);
+
     Restart.restartApp();
   }
 
@@ -111,7 +145,6 @@ class selectedAppBar extends StatelessWidget{
                 onPressed: (){
                   // User choosed delete current photos
                   removeCurrentSelection();
-
 
                 }, icon: Icon(Icons.delete_rounded, color: Colors.white,), label: Text("")),
           ],

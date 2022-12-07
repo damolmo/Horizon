@@ -95,6 +95,27 @@ class _CategoriaState extends State<Categoria>{
     });
   }
 
+  void refreshCategoryPhotos(){
+    // Refresh photos on current category
+
+    setState(() {
+      currentPhotos = [];
+      currentPhotosName = [];
+    });
+
+    for (String category in photos.keys){
+      for (String photo in photos[category].keys){
+        if (currentCategory.contains(category)){
+          currentPhotosName.add(photo);
+          currentPhotos.add(photos[category][photo]);
+        }
+      }
+    }
+
+    // Sort recently created lists in alphabetical order
+    sortLists();
+  }
+
   void readUpdateJsonMap () {
     // Read Json file and update map
     String jsonString = file.readAsStringSync();
