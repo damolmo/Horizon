@@ -104,7 +104,8 @@ class _AboutPhotoState extends State<AboutPhoto>{
                   title: Text(allEntriesString[index], style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 30)),
                   subtitle: Text(allEntries[index], style: TextStyle(color: Colors.white, fontSize: 20)),
                 )
-                )
+                ),
+                      onTap : (){}
                 );
               }
                );

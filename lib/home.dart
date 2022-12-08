@@ -67,6 +67,9 @@ class _homeMenuState extends State<homeMenu>{
   List<String> selectedTrashPhotos = [];
   List<String> selectedTrashPhotosName = [];
   List<int> selectedTrashPhotosIndex = [];
+  List<int> selectedRecentsPhotosIndex = [];
+  List<String> selectedRecentsPhotosName = [];
+  List<String> selectedRecentsPhotos = [];
   List<String> categoriesCover = [];
   Map<dynamic,dynamic> photos;
   Map<dynamic,dynamic> trash = {};
@@ -158,6 +161,10 @@ class _homeMenuState extends State<homeMenu>{
   void generateRecentsPhotos() async {
     // Recents works as independent category
 
+    // Read JSON before reloading anything
+    String jsonString = file.readAsStringSync();
+    photos = jsonDecode(jsonString);
+
     for (String photo in photos["Reciente"].keys) {
       setState(() {
         currentRecentsPhotos.add(photos["Reciente"][photo]);
@@ -187,6 +194,29 @@ class _homeMenuState extends State<homeMenu>{
     });
   }
 
+  void generateTrashPhotos(){
+    // This will refresh current trash without hacks
+
+    setState(() {
+      trashPhotos = [];
+      trashPhotosName = [];
+    });
+
+    // Read trash hasmap with latest results
+    String jsonString = fileTrash.readAsStringSync();
+    trash = jsonDecode(jsonString);
+
+    // Update lists with latest photos
+    for (String photo in trash.keys){
+      if (!trashPhotosName.contains(photo)){
+        setState(() {
+          trashPhotosName.add(photo);
+          trashPhotos.add(trash[photo]);
+        });
+      }
+    }
+  }
+
   void refreshLists(){
     // Since user wants to delete photos without reboots
     // A proper way to refresh UI is needed
@@ -196,12 +226,14 @@ class _homeMenuState extends State<homeMenu>{
 
     setState(() {
       currentRecentsPhotosName = [];
+      currentRecentsPhotos = [];
       currentPhotos = [];
       categoriesCover =  [];
     });
 
     generateRecentsPhotos(); // Generate recents photos
     generateCategoriesCover(); // Generate categories covers
+    generateTrashPhotos(); // Refresh trash photos on need
   }
 
   void selectedIndex(int indexCategory){
@@ -234,10 +266,125 @@ class _homeMenuState extends State<homeMenu>{
       selectedCategoriesIndex = [];
       categories;
     });
-
   }
 
-  setCurrentAppbar(int index){
+  setSelectedRecentsIndex(int index){
+    // User will choose multiple photos, we need an index of them
+    setState(() {
+      if (!selectedRecentsPhotosIndex.contains(index)){
+        selectedRecentsPhotosIndex.add(index);
+    } else {
+      selectedRecentsPhotosIndex.remove(index);
+    }
+    });
+  }
+
+  setSelectedRecentsPhotos(String photoPath, String photoName){
+    // User will choose multiple photos, we'll add them to lists
+    setState(() {
+      if (!selectedRecentsPhotosName.contains(photoName) && !selectedRecentsPhotos.contains(photoPath)){
+        selectedRecentsPhotosName.add(photoName);
+        selectedRecentsPhotos.add(photoPath);
+      } else {
+        selectedRecentsPhotosName.remove(photoName);
+        selectedRecentsPhotos.remove(photoPath);
+      }
+    });
+
+    print(selectedRecentsPhotos);
+    print(selectedRecentsPhotosName);
+  }
+
+  void removeSelectedRecents(){
+    // User choosed to remove selected recents
+
+    // Read trash HashMap
+    String jsonString = fileTrash.readAsStringSync();
+    trash = jsonDecode(jsonString);
+
+    // Read photos HashMap
+    jsonString = file.readAsStringSync();
+    photos = jsonDecode(jsonString);
+
+    print(selectedRecentsPhotos);
+    print(selectedRecentsPhotosName);
+
+    for (String photoPath in selectedRecentsPhotos){
+      for (String photoName in selectedRecentsPhotosName){
+        if (selectedRecentsPhotos.indexOf(photoPath) == selectedRecentsPhotosName.indexOf(photoName)){
+          trash[photoName] = ""; // initialize
+          trash[photoName] = photoPath; // Add new entry
+          if (photos["Reciente"].containsKey(photoName)) photos["Reciente"].remove(photoName);
+        }
+      }
+    }
+
+    // Encode maps
+    jsonString = jsonEncode(trash);
+    fileTrash.writeAsStringSync(jsonString);
+
+    jsonString = jsonEncode(photos);
+    file.writeAsStringSync(jsonString);
+
+    setState(() {
+      selectedRecentsPhotosName = [];
+      selectedRecentsPhotos = [];
+      selectedRecentsPhotosIndex = [];
+      refreshLists();
+      appBar = setRecentsAppBar(context);
+    });
+  }
+
+  chooseAppBar(int index, String photoPath, String photoName){
+      setSelectedRecentsIndex(index);
+      setSelectedRecentsPhotos(photoPath, photoName);
+
+      setState((){
+        appBar = setRecentsAppBar(context);
+      });
+  }
+
+  AppBar setRecentsAppBar(BuildContext context){
+    // User will be able to choosed multiple photos from home screen and remove or share them if needed
+    if (selectedRecentsPhotosIndex.length == 0){
+      return AppBar(
+        backgroundColor: Colors.black,
+        automaticallyImplyLeading: false,
+      );
+    } else {
+      return AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.blueAccent.withOpacity(0.5),
+        title: Row(
+          children: [
+            TextButton.icon(
+                onPressed: (){
+                  // User cleaned all photos from selection
+                  setState(() {
+                    selectedRecentsPhotosIndex = [];
+                    selectedRecentsPhotosName = [];
+                    selectedRecentsPhotos = [];
+                    appBar = setRecentsAppBar(context);
+                  });
+                },
+                icon: Icon(Icons.close_rounded, color: Colors.white,), label: Text("")),
+            Spacer(),
+            Text("${selectedRecentsPhotosIndex.length} seleccionado(s)", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),),
+            Spacer(),
+            TextButton.icon(
+                onPressed: (){
+                  // Remove selected photos
+                  removeSelectedRecents();
+                },
+                icon: Icon(Icons.delete_rounded, color: Colors.white,),
+                label: Text(""))
+          ],
+        ),
+      );
+    }
+  }
+
+  setCategoryAppBar(int index){
     // Check appbar type and set
     setState(() {
       addCategoryToList(categories[index]); // Add element
@@ -318,21 +465,25 @@ class _homeMenuState extends State<homeMenu>{
   }
 
   void addToRestoreListIndex(int index){
-    if (!selectedTrashPhotosIndex.contains(index)){
+    setState(() {
+      if (!selectedTrashPhotosIndex.contains(index)){
       selectedTrashPhotosIndex.add(index);
     } else {
       selectedTrashPhotosIndex.remove(index);
     }
+    });
   }
 
-  void addToRestoreList(String photo){
+  void addToRestoreList(String photo, String photoName){
     // Add choosed photo to restore list
 
     setState(() {
     if (!selectedTrashPhotos.contains(photo)){
-        selectedTrashPhotos.add(photo); // Photo path
+      selectedTrashPhotos.add(photo); // Photo path
+      selectedTrashPhotosName.add(photoName);
     } else {
       selectedTrashPhotos.remove(photo);
+      selectedTrashPhotosName.add(photoName);
     }
     });
 
@@ -377,26 +528,17 @@ class _homeMenuState extends State<homeMenu>{
     String jsonString = fileTrash.readAsStringSync();
     trash = jsonDecode(jsonString);
 
-    // Recover photoname using photopath and original hash map
-    for (String photo in selectedTrashPhotos){
-      for (String photoName in trash.keys){
-        if (trash[photoName].contains(photo) && !selectedTrashPhotosName.contains(photoName)){
-          selectedTrashPhotosName.add(photoName);
-          trashPhotos.remove(photo);
-          trashPhotosName.remove(photoName);
-        }
-      }
-    }
-    print(selectedTrashPhotos);
-    print(selectedTrashPhotosName);
-
     // Add photoname along photopath into hash map
     for (String photoName in selectedTrashPhotosName){
       for (String photo in selectedTrashPhotos){
-        if (selectedTrashPhotos.indexOf(photo) == selectedTrashPhotosName.indexOf(photoName) && !photos.containsKey(photoName))
-        photos["Reciente"][photoName] = "";
-        photos["Reciente"][photoName] = photo;
-        trash.remove(photoName);
+        if (selectedTrashPhotosName.indexOf(photoName) == selectedTrashPhotos.indexOf(photo))
+          if (!photos["Reciente"].keys.contains(photoName)){
+            photos["Reciente"][photoName] = "";
+            photos["Reciente"][photoName] = photo;
+            trashPhotos.remove(photo);
+            trashPhotosName.remove(photoName);
+            trash.remove(photoName);
+          }
       }
     }
 
@@ -404,6 +546,7 @@ class _homeMenuState extends State<homeMenu>{
     jsonString = "";
     jsonString= jsonEncode(photos);
     file.writeAsStringSync(jsonString);
+
     jsonString = "";
     jsonString = jsonEncode(trash);
     fileTrash.writeAsStringSync(jsonString);
@@ -414,6 +557,7 @@ class _homeMenuState extends State<homeMenu>{
       trashPhotosName;
       selectedTrashPhotos = [];
       selectedTrashPhotosName = [];
+      refreshLists();
     });
   }
 
@@ -449,7 +593,6 @@ class _homeMenuState extends State<homeMenu>{
         )
     );
   }
-
 
   @override
   Widget build(BuildContext context){
@@ -488,6 +631,7 @@ class _homeMenuState extends State<homeMenu>{
                             esCategorias = false;
                             esPapelera = false;
                             swapColors();
+                            refreshLists();
                           });
                         },
                         child: Text("Reciente", style: TextStyle(
@@ -517,6 +661,7 @@ class _homeMenuState extends State<homeMenu>{
                             esCategorias = true;
                             esPapelera = false;
                             swapColors();
+                            refreshLists();
                           });
                         },
                         child: Text("Categorías", style: TextStyle(
@@ -545,6 +690,7 @@ class _homeMenuState extends State<homeMenu>{
                                   esCategorias = false;
                                   esPapelera = true;
                                   swapColors();
+                                  refreshLists();
                                 });
                               }),
                           ),
@@ -557,7 +703,7 @@ class _homeMenuState extends State<homeMenu>{
 
               SizedBox(height: 20,),
 
-              if (esReciente)
+              if (esReciente && currentRecentsPhotos.length >= 1)
                 Expanded(
                     child: GridView.count(
                         childAspectRatio: 2.3/3,
@@ -575,11 +721,20 @@ class _homeMenuState extends State<homeMenu>{
                                       child : Card(
                                         color: Colors.grey,
                                                 child: Image.file(File(
-                                                    currentRecentsPhotos[index]),)
+                                                    currentRecentsPhotos[index]),
+                                                    color: selectedRecentsPhotosIndex.contains(index) ? Colors.blueAccent : null,)
                                       ),
                                       onTap: () {
+                                        if (selectedRecentsPhotosIndex.length == 0){
                                         Navigator.push(context, MaterialPageRoute(builder: (context)=> imagePreview(image : currentRecentsPhotos[index], imageName : currentRecentsPhotosName[index], currentVideos : currentVideos, currentVideosName : currentVideosName, currentCategory: "Reciente",)));
+                                        refreshLists();
+                                        } else {
+                                          chooseAppBar(index, currentRecentsPhotos[index], currentRecentsPhotosName[index]);
+                                        }
                                       },
+                                        onLongPress: (){
+                                          chooseAppBar(index, currentRecentsPhotos[index], currentRecentsPhotosName[index]);
+                                        },
                                   ),
                               ]
                               )
@@ -591,7 +746,7 @@ class _homeMenuState extends State<homeMenu>{
                       )
                         ),
 
-              if (esCategorias)
+              if (esCategorias && categories.length >= 1)
                 Expanded(
                     child: GridView.count(
                         childAspectRatio: 2.7/3,
@@ -635,7 +790,7 @@ class _homeMenuState extends State<homeMenu>{
                                             } else {
                                               // We'll add options to remove selected categories
                                              setState((){
-                                               setCurrentAppbar(index);
+                                               setCategoryAppBar(index);
                                              });
                                             }
 
@@ -644,7 +799,7 @@ class _homeMenuState extends State<homeMenu>{
                                           onLongPress: (){
                                             // We'll add options to remove selected categories
                                             setState((){
-                                              setCurrentAppbar(index);
+                                              setCategoryAppBar(index);
                                             });
                                           },
                                     ),
@@ -659,7 +814,7 @@ class _homeMenuState extends State<homeMenu>{
                           )
                 ),
 
-              if (esPapelera)
+              if (esPapelera && trashPhotos.length >= 1)
                 Expanded(
                   child:  GridView.count(
                       crossAxisCount: 3,
@@ -693,13 +848,13 @@ class _homeMenuState extends State<homeMenu>{
                                   onTap: (){
                                     // TO-DO
                                     if (selectedTrashPhotosIndex.length > 0 ){
-                                      addToRestoreList(trashPhotos[index]);
+                                      addToRestoreList(trashPhotos[index], trashPhotosName[index]);
                                       addToRestoreListIndex(index);
                                     }
                                   },
 
                                   onLongPress: (){
-                                    addToRestoreList(trashPhotos[index]);
+                                    addToRestoreList(trashPhotos[index], trashPhotosName[index]);
                                     addToRestoreListIndex(index);
                                   },
                                 )
@@ -713,21 +868,44 @@ class _homeMenuState extends State<homeMenu>{
                   )
                 ),
 
+              if (esReciente && currentRecentsPhotos.length == 0)
+                Expanded(
+                  child:  Align(
+                    child:  Column(
+                    children: [
+                      Image.asset("assets/images/images.png"),
+                      Text("Empieza tomando una foto", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),),
+                ]
+                  )
+                  )
+                ),
+
+              if (esCategorias && categories.length == 0)
+                Expanded(
+                  child:  Align(
+                    child:  Column(
+                    children: [
+                      Image.asset("assets/images/folder.png"),
+                      Align(
+                          alignment : Alignment.center,
+                          child : Text("Crea una categoría", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),)),
+                    ],
+                  ),
+                  )
+                ),
+
               if (esPapelera && trashPhotosName.length == 0)
-                FittedBox(
+                Expanded(
+                child : Align(
+                  alignment: Alignment.center,
                   child: Column(
                     children: [
-                      SizedBox(height: 100,),
-                      Align(
-                      alignment : Alignment.center,
-                      child : Image.asset("assets/images/trash.png", width: 200, height: 200,)),
-                      Align(
-                        alignment : Alignment.center,
-                      child : Text("No hay nada, esta vacía", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),)),
-                      SizedBox(height: 200,)
+                      Image.asset("assets/images/trash.png", width: 200, height: 200, ),
+                      Text("No hay nada, esta vacía", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),),
                     ],
                   ),
                 ),
+              ),
 
               if (esReciente)
               CameraButton(context),
@@ -735,7 +913,7 @@ class _homeMenuState extends State<homeMenu>{
               if (esCategorias)
                 CategoryButton(context),
 
-              if (esPapelera && selectedTrashPhotos.length > 0)
+              if (esPapelera && selectedTrashPhotosIndex.length >= 1)
                 // Only show button if there's a selected photo
                 trasButtonContainer(context),
             ]

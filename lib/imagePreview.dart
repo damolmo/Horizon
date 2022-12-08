@@ -107,9 +107,19 @@ class _imagePreviewState extends State<imagePreview>{
                 icon: TextButton.icon(
                   icon : Icon(Icons.share_rounded, color: Colors.white, size: 40,),
                   onPressed: (){
+                    if (imageName.contains("VIDEO")){
+                      print(imageName);
+                      String fullName = "/data/user/0/com.daviiid99.horizon/app_flutter/" + imageName + ".mp4";
+                      int index = currentVideos.indexOf(fullName);
+                      Share.shareFiles([currentVideos[index]], text: "Hey, echale un vistazo a este video");
+                    } else {
                     Share.shareFiles([image], text: "Hey, echale un vistazo a esta foto");
-                  }, label: Text(""),),
-                label: ""),
+                  }
+                    },
+                label: Text("")
+                ),
+                label: ""
+            ),
 
             BottomNavigationBarItem(
               backgroundColor: Colors.transparent,
@@ -126,7 +136,7 @@ class _imagePreviewState extends State<imagePreview>{
                   onPressed: (){
                     // User proceed with photo delete
                     deletePhoto();
-                    Restart.restartApp();
+                    Navigator.pop(context); // return to previous screen instead of restart the whole app
 
                   }, label:  Text(""),),label: "")
 
