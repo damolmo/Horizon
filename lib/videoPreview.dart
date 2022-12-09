@@ -42,6 +42,8 @@ class _videoPreviewState extends State<videoPreview>{
   IconData loopLock = Icons.lock_rounded;
   bool looping = true;
   bool visibility = true;
+  //Duration videoDuration = Duration(hours: 0, minutes: 0);
+  //Duration currentPos =  Duration(hours: 0, minutes: 0);
 
 
   void initState()  async {
@@ -166,6 +168,20 @@ class _videoPreviewState extends State<videoPreview>{
     );
   }
 
+  /**
+  List<Duration> updateCurrentTimeStamp() {
+
+    List<Duration> duraciones = [];
+
+    // This is an attemp to retrieve current video playback position
+     setState((){
+       videoDuration = _videoPlayerController.value.duration;
+       currentPos = _videoPlayerController.value.position;
+     });
+
+     return  duraciones = [videoDuration, currentPos ];
+  }*/
+
   Widget build(BuildContext context){
     return Scaffold(
       backgroundColor: Colors.black,
@@ -185,21 +201,42 @@ class _videoPreviewState extends State<videoPreview>{
           onTap: (){
             videoNavBarVisibility();
           },
-       child :  FutureBuilder(
+       child : Container(
+           child : FutureBuilder(
         future: _initializeVideoPlayerFuture,
         builder: (context, snapshot){
           if (snapshot.connectionState == ConnectionState.done){
             return AspectRatio(
-                aspectRatio: _videoPlayerController.value.aspectRatio, child: VideoPlayer(_videoPlayerController));
+            aspectRatio: _videoPlayerController.value.aspectRatio,
+              child:VideoPlayer(_videoPlayerController),);
           } else {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
         }
-      )),
-        if(visibility)
-        videoNavbarController(context),
+      )
+       ),
+        ),
+
+    //Text("${updateCurrentTimeStamp()[1]} / ${updateCurrentTimeStamp()[0]}", style: TextStyle(color: Colors.white),),
+
+
+    Container(
+      child:VideoProgressIndicator(
+        _videoPlayerController,
+        allowScrubbing: true,
+        colors:VideoProgressColors(
+          backgroundColor: Colors.transparent,
+          playedColor: Colors.blueAccent.withOpacity(0.5),
+          bufferedColor: Colors.black,
+        )
+    )),
+
+    SizedBox(height: 20,),
+
+    if(visibility)
+    videoNavbarController(context),
       ]
       )
     );
