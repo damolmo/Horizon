@@ -21,6 +21,7 @@ class AboutPhoto extends StatefulWidget {
 class _AboutPhotoState extends State<AboutPhoto>{
 
   double photoSize = 0.0;
+  String finalSize = "";
   late String photoName;
   late String fileType;
   late String photoPath;
@@ -53,11 +54,28 @@ class _AboutPhotoState extends State<AboutPhoto>{
   }
 
   checkPhotoSize() async {
-    // We'll do a call to image file path to get photo size
-    final file = File(photoPath);
-    var sizeBytes = file.readAsBytesSync().lengthInBytes;
-    var sizeKbytes = sizeBytes / 1024;
-    photoSize =  sizeKbytes.roundToDouble();
+    // We'll do a call to image file path to get photo size+
+     final file;
+
+
+    if (photoName.contains("VIDEO")){
+      file = File("/data/user/0/com.daviiid99.horizon/app_flutter/" + photoName);
+
+    } else {
+       file = File(photoPath);
+    }
+
+      var sizeBytes = file
+          .readAsBytesSync()
+          .lengthInBytes;
+      var sizeKbytes = sizeBytes / 1024;
+      photoSize = sizeKbytes.roundToDouble();
+      finalSize = photoSize.toString() + "KB";
+      if (photoSize >= 1000) {
+        var sizeMbytes = sizeKbytes / 1024;
+        photoSize = sizeMbytes.roundToDouble();
+        finalSize = photoSize.toString() + "MB";
+    }
 
   }
 
@@ -66,7 +84,7 @@ class _AboutPhotoState extends State<AboutPhoto>{
 
     allEntries.add(photoName.toString());
     allEntries.add(photoPath.toString());
-    allEntries.add(photoSize.toString()+"KB");
+    allEntries.add(finalSize.toString());
   }
 
   setFileTitle(){

@@ -47,8 +47,9 @@ class _PreviewState extends State<Preview> {
   bool esPapelera = false;
   String latestPhoto = "";
   String latestPhotoName = "";
-  QRViewController? controller;
+  late QRViewController controller;
   Barcode? qrOutput;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
 
   // Types of controllers
   late CameraController _controladorMain;
@@ -129,7 +130,7 @@ class _PreviewState extends State<Preview> {
     //_controladorSelfie.dispose();
 
     _currentSensor.dispose();
-    controller?.dispose();
+    controller.dispose();
 
     super.dispose();
   }
@@ -265,7 +266,28 @@ class _PreviewState extends State<Preview> {
 
   }
 
+  hotReloadHashMap(){
+    // Since the user can remove photos from home screen using in-app features
+    // We need to force a hashmap reload before writing to it again
+
+    String jsonString = file.readAsStringSync();
+    photos = jsonDecode(jsonString);
+    currentPhotos = [];
+    currentPhotosName = [];
+
+    for (String photo in photos["Reciente"].keys){
+      // Add photos img and path to lists
+      setState(() {
+        currentPhotosName.add(photo);
+        currentPhotos.add(photos["Reciente"][photo]);
+      });
+    }
+  }
+
   updateCurrentPhotos(String photoPath, String photoName) async {
+
+    print("fotos nuevas : $photos");
+
     setState(() {
       currentPhotosName.add(photoName);
       currentPhotos.add(photoPath);
@@ -377,7 +399,10 @@ class _PreviewState extends State<Preview> {
   void reloadMainCamera() async {
     setState(() {
       _currentSensor.pausePreview();
-      _currentSensor = _controladorMain;
+      _currentSensor = CameraController(
+        widget.mainCamera,
+        currentResMain,
+      );
       _futureControllerCurrent =
           _currentSensor.initialize();
       _currentSensor.resumePreview();
@@ -390,7 +415,10 @@ class _PreviewState extends State<Preview> {
   void reloadSelfieCamera() async {
     setState(() {
       _currentSensor.pausePreview();
-      _currentSensor = _controladorSelfie;
+      _currentSensor = CameraController(
+        widget.selfieCamera,
+        currentResSelfie,
+      );
       _futureControllerCurrent =
           _currentSensor.initialize();
       _currentSensor.resumePreview();
@@ -434,6 +462,8 @@ class _PreviewState extends State<Preview> {
    takeCamera () async {
     // This method will call current camera sensor to take a picture
 
+     await hotReloadHashMap();
+
     try{
       // Double-check that the controller is available
       await _currentSensor;
@@ -459,7 +489,7 @@ class _PreviewState extends State<Preview> {
           } else if (isQRScanner) {
             // User switched to QR Scanner mode
             _currentSensor.pausePreview(); // we can't use both at the same time
-            onQRViewCreated: _onQRViewCreated;
+            _onQRViewCreated;
 
           } else {
             if(!isRecording){
@@ -516,7 +546,7 @@ class _PreviewState extends State<Preview> {
          } else if (isQRScanner) {
            // User switched to QR Scanner mode
            _currentSensor.pausePreview(); // we can't use both at the same time
-           onQRViewCreated: _onQRViewCreated;
+           _onQRViewCreated;
 
          } else {
            if(!isRecording){
@@ -572,11 +602,10 @@ class _PreviewState extends State<Preview> {
   void _onQRViewCreated(QRViewController controller ){
     // This method will handle QR code scan
     this.controller = controller;
-    this.controller?.resumeCamera();
     controller.scannedDataStream.listen((scanData){
       setState(() {
         qrOutput = scanData;
-        print(qrOutput);
+        print("ejem: $qrOutput");
       });
     });
 
@@ -779,21 +808,25 @@ class _PreviewState extends State<Preview> {
                 }
               },
               child: Text("Cámara", style: TextStyle(color: Colors.white, fontSize: 20),)),
-
-          /**Spacer(),
+          /**
+          Spacer(),
 
           TextButton(
             onPressed: (){
-              setState(() {
+               setState(() {
                 isQRScanner = true;
                 isCamera = false;
                 cameraButtonColor = Colors.black;
+                _currentSensor.pausePreview();
+                controller.pauseCamera();
+                controller.resumeCamera();
               });
 
 
             },
             child: Text("QR", style: TextStyle(color: Colors.white, fontSize: 20),),
-          ),*/
+          ),
+              */
 
           Spacer(),
           TextButton(
@@ -801,9 +834,10 @@ class _PreviewState extends State<Preview> {
                   backgroundColor: Colors.black
               ),
               onPressed: (){
-                if (isCamera){
+                if (isCamera || isQRScanner){
                   setState((){
                     cameraButtonColor = Colors.redAccent;
+                    isQRScanner = false;
                     isCamera = false;
                   });
                 }
@@ -913,7 +947,8 @@ class _PreviewState extends State<Preview> {
 
       body: Column(
         children : [
-      FutureBuilder<void>(
+          if (!isQRScanner)
+            FutureBuilder<void>(
         future: _futureControllerCurrent,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
@@ -957,6 +992,21 @@ class _PreviewState extends State<Preview> {
           }
         }
         ),
+
+          if (isQRScanner)
+            Scaffold(
+              body: QRView(
+                key: qrKey,
+                onQRViewCreated: _onQRViewCreated,
+                overlay: QrScannerOverlayShape(
+                  borderColor: Colors.orange,
+                  borderRadius: 10,
+                  borderLength: 30,
+                  borderWidth: 10,
+                  cutOutSize: 250,
+                ),
+              )
+            ),
 
           Column(
               children: [

@@ -202,7 +202,9 @@ class _videoPreviewState extends State<videoPreview>{
             videoNavBarVisibility();
           },
        child : Container(
-           child : FutureBuilder(
+         child : Stack(
+           children: [
+           FutureBuilder(
         future: _initializeVideoPlayerFuture,
         builder: (context, snapshot){
           if (snapshot.connectionState == ConnectionState.done){
@@ -215,13 +217,16 @@ class _videoPreviewState extends State<videoPreview>{
             );
           }
         }
+      ), if(visibility)
+            Center(
+          child: videoNavbarController(context),
       )
+      ]
        ),
         ),
+        ),
 
-    //Text("${updateCurrentTimeStamp()[1]} / ${updateCurrentTimeStamp()[0]}", style: TextStyle(color: Colors.white),),
-
-
+    //Text("${updateCurrentTimeStamp()[1]} / ${updateCurrentTimeStamp()[0]}", style: TextStyle(color: Colors.white),)
     Container(
       child:VideoProgressIndicator(
         _videoPlayerController,
@@ -235,10 +240,9 @@ class _videoPreviewState extends State<videoPreview>{
 
     SizedBox(height: 20,),
 
-    if(visibility)
-    videoNavbarController(context),
-      ]
-      )
+
+    ]
+    )
     );
   }
 }

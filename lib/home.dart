@@ -314,10 +314,16 @@ class _homeMenuState extends State<homeMenu>{
         if (selectedRecentsPhotos.indexOf(photoPath) == selectedRecentsPhotosName.indexOf(photoName)){
           trash[photoName] = ""; // initialize
           trash[photoName] = photoPath; // Add new entry
-          if (photos["Reciente"].containsKey(photoName)) photos["Reciente"].remove(photoName);
+          if (photos["Reciente"].containsKey(photoName)){
+            setState((){
+              photos["Reciente"].remove(photoName);
+            });
+          }
         }
       }
     }
+
+    print("photos :  $photos");
 
     // Encode maps
     jsonString = jsonEncode(trash);
