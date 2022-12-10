@@ -275,13 +275,16 @@ class _PreviewState extends State<Preview> {
     currentPhotos = [];
     currentPhotosName = [];
 
-    for (String photo in photos["Reciente"].keys){
-      // Add photos img and path to lists
-      setState(() {
-        currentPhotosName.add(photo);
-        currentPhotos.add(photos["Reciente"][photo]);
-      });
+    if (photos.keys.length > 0 ){
+      for (String photo in photos["Reciente"].keys){
+        // Add photos img and path to lists
+        setState(() {
+          currentPhotosName.add(photo);
+          currentPhotos.add(photos["Reciente"][photo]);
+        });
+      }
     }
+
   }
 
   updateCurrentPhotos(String photoPath, String photoName) async {

@@ -165,11 +165,13 @@ class _homeMenuState extends State<homeMenu>{
     String jsonString = file.readAsStringSync();
     photos = jsonDecode(jsonString);
 
-    for (String photo in photos["Reciente"].keys) {
-      setState(() {
-        currentRecentsPhotos.add(photos["Reciente"][photo]);
-        currentRecentsPhotosName.add(photo);
-      });
+    if (photos.keys.length > 0 ){
+      for (String photo in photos["Reciente"].keys) {
+        setState(() {
+          currentRecentsPhotos.add(photos["Reciente"][photo]);
+          currentRecentsPhotosName.add(photo);
+        });
+      }
     }
 
     // Sort recents photos list in descending order
@@ -181,6 +183,7 @@ class _homeMenuState extends State<homeMenu>{
     orderList = sortList(lista: currentRecentsPhotosName);
     orderList.sortListDescending();
     currentRecentsPhotosName = orderList.getList();
+
   }
 
   void addCategoryToList(String category){
